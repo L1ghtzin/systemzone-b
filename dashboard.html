@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SystemZone - Central de 229 Rotas & Proxy IPv6</title>
+  <title>SystemZone - Central Free de Rotas & Proxy IPv6</title>
   <style>
     :root {
       --bg: #0b0f19;
@@ -138,6 +138,16 @@
       min-width: 200px;
     }
 
+    .free-pill {
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--accent);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+
     /* Layout Principal em 2 Colunas */
     .main-grid {
       display: grid;
@@ -151,7 +161,7 @@
       }
     }
 
-    /* Sidebar de Navegação de Rotas */
+    /* Sidebar */
     .sidebar {
       background: var(--surface);
       border: 1px solid var(--surface-border);
@@ -410,10 +420,10 @@
   <div class="container">
     <header>
       <div class="header-top">
-        <h1>🌐 SystemZone - Central Completa de 229 Rotas</h1>
+        <h1>🌐 SystemZone - Central de Rotas Free</h1>
         <div class="status-badge">
           <span class="status-indicator"></span>
-          <span>Proxy IPv6 Rotativo Ativo</span>
+          <span>100% Rotas Sem Requisito Pro</span>
         </div>
       </div>
 
@@ -421,7 +431,8 @@
       <div class="api-key-bar">
         <label for="globalApiKey">Sua API Key:</label>
         <input type="text" id="globalApiKey" value="freekey" autocorrect="off" autocapitalize="none" spellcheck="false" placeholder="Digite sua chave...">
-        <span style="font-size:0.8rem; color:var(--text-muted);">Injetada automaticamente em todas as rotas</span>
+        <span class="free-pill">FREE KEY ATIVA</span>
+        <span style="font-size:0.8rem; color:var(--text-muted); margin-left:auto;">Todas as rotas Pro foram filtradas</span>
       </div>
 
       <!-- Grid de Estatísticas do Proxy -->
@@ -450,7 +461,7 @@
       <!-- Sidebar com Catálogo de Rotas -->
       <aside class="sidebar">
         <div class="sidebar-search">
-          <input type="search" id="searchRoutes" placeholder="🔍 Filtrar entre 229 rotas..." autocorrect="off" autocapitalize="none">
+          <input type="search" id="searchRoutes" placeholder="🔍 Filtrar rotas gratuitas..." autocorrect="off" autocapitalize="none">
         </div>
         <div class="routes-list" id="routesList">
           <!-- Preenchido via JavaScript -->
@@ -502,10 +513,10 @@
   </div>
 
   <script>
-    // Catálogo Completo e Oficial de Rotas da SystemZone (229 rotas catalogadas por categoria)
+    // Catálogo 100% FREE (Sem NENHUMA rota que exija chave Pro)
     const ROUTES_CATALOG = [
       {
-        category: "🤖 Inteligência Artificial (Modelos & IAs)",
+        category: "🤖 Inteligência Artificial (Gratuitas)",
         routes: [
           { id: "copilot", name: "Microsoft Copilot", method: "GET", endpoint: "https://zone.api.br/api/copilot", params: [{ name: "text", label: "Mensagem para o Copilot", type: "text", default: "Olá, me dê uma dica rápida." }] },
           { id: "deepseek32", name: "DeepSeek V3.2", method: "GET", endpoint: "https://zone.api.br/api/ia/deepseek-v3.2", params: [{ name: "text", label: "Prompt DeepSeek V3.2", type: "text", default: "Explique como funciona o IPv6." }, { name: "session", label: "ID de Sessão (Memória)", type: "text", default: "sessao_123" }] },
@@ -523,11 +534,15 @@
           { id: "claudehaiku", name: "Claude Haiku 4.5", method: "GET", endpoint: "https://zone.api.br/api/ia/claude-haiku", params: [{ name: "text", label: "Prompt Claude Haiku", type: "text", default: "Como organizar minhas finanças?" }] },
           { id: "multiai", name: "Multi AI (DeepSeek + GPT + Claude)", method: "GET", endpoint: "https://zone.api.br/api/ia/multiai", params: [{ name: "text", label: "Pergunta Multi-IA", type: "text", default: "Qual é a melhor linguagem para backend?" }] },
           { id: "deepsearch", name: "DeepSearch (Pesquisa Profunda)", method: "GET", endpoint: "https://zone.api.br/api/ia/deepsearch", params: [{ name: "text", label: "Pesquisa Detalhada com Fontes", type: "text", default: "Últimas notícias sobre inteligência artificial" }] },
+          { id: "felo", name: "Felo AI Search", method: "GET", endpoint: "https://zone.api.br/ia/felo", params: [{ name: "text", label: "Pergunta Felo AI", type: "text", default: "Resumo dos avanços aeroespaciais de 2026" }] },
+          { id: "gemini", name: "Gemini Web Search", method: "GET", endpoint: "https://zone.api.br/api/ia/gemini", params: [{ name: "text", label: "Pergunta com Busca Web", type: "text", default: "Quem ganhou o último jogo do Brasileirão?" }] },
+          { id: "quillbot", name: "QuillBot Chat IA", method: "GET", endpoint: "https://zone.api.br/api/ia/quillbot-chat", params: [{ name: "text", label: "Prompt QuillBot", type: "text", default: "Reescreva este texto formalmente." }] },
+          { id: "deepai_chat", name: "DeepAI Chat", method: "GET", endpoint: "https://zone.api.br/api/ia/deepai", params: [{ name: "text", label: "Prompt DeepAI", type: "text", default: "Conte uma piada nerd." }] },
           { id: "grok", name: "Grok IA (xAI)", method: "GET", endpoint: "https://zone.api.br/v1/grok", params: [{ name: "text", label: "Mensagem Grok", type: "text", default: "Olá Grok!" }] }
         ]
       },
       {
-        category: "📥 Downloads & Mídias Sociais",
+        category: "📥 Downloads de Mídias Sociais",
         routes: [
           { id: "instagram", name: "Instagram Downloader", method: "GET", endpoint: "https://zone.api.br/api/V2/instagram", params: [{ name: "url", label: "URL do Instagram (Reel, Post, Carrossel)", type: "url", default: "https://www.instagram.com/reels/Df-DeM8P4aI/" }] },
           { id: "tiktok", name: "TikTok Downloader", method: "GET", endpoint: "https://zone.api.br/api/v2/tiktok", params: [{ name: "url", label: "URL do TikTok", type: "url", default: "https://vt.tiktok.com/ZSx2pMEgR/" }] },
@@ -543,73 +558,102 @@
           { id: "twitter", name: "Twitter / X Downloader", method: "GET", endpoint: "https://zone.api.br/api/v2/twitter", params: [{ name: "url", label: "URL do Post no X/Twitter", type: "url", default: "https://x.com/..." }] },
           { id: "ytmp4", name: "Play Vídeo Search (YouTube)", method: "GET", endpoint: "https://zone.api.br/api/ytmp4", params: [{ name: "text", label: "Nome do Vídeo ou Link", type: "text", default: "Rick Astley Never Gonna Give You Up" }] },
           { id: "ryt", name: "RYT YouTube Instantâneo", method: "GET", endpoint: "https://zone.api.br/api/v1/ryt", params: [{ name: "url", label: "Link do YouTube", type: "url", default: "https://www.youtube.com/watch?v=..." }] },
-          { id: "gyt", name: "GYT YouTube Motor", method: "GET", endpoint: "https://zone.api.br/api/v1/gyt", params: [{ name: "url", label: "Link do YouTube", type: "url", default: "https://www.youtube.com/watch?v=..." }] }
+          { id: "gyt", name: "GYT YouTube Motor", method: "GET", endpoint: "https://zone.api.br/api/v1/gyt", params: [{ name: "url", label: "Link do YouTube", type: "url", default: "https://www.youtube.com/watch?v=..." }] },
+          { id: "gyt_dl", name: "GYT Streaming Download", method: "GET", endpoint: "https://zone.api.br/api/v1/gyt-dl", params: [{ name: "url", label: "Link do YouTube", type: "url", default: "https://www.youtube.com/watch?v=..." }] },
+          { id: "player_yt", name: "Player de Áudio YouTube", method: "GET", endpoint: "https://zone.api.br/v2/player", params: [{ name: "url", label: "Link do YouTube", type: "url", default: "https://www.youtube.com/watch?v=..." }] }
         ]
       },
       {
-        category: "🎨 Imagens por IA & Editores",
+        category: "🎨 Imagens por IA & Editores Free",
         routes: [
           { id: "dalle3", name: "DALL-E 3 (OpenAI)", method: "POST", endpoint: "https://zone.api.br/api/v1/dalle3", params: [{ name: "text", label: "Prompt de Geração", type: "text", default: "cyberpunk city at dusk, 4k highly detailed" }] },
-          { id: "gptimage25flare", name: "GPT Image 2.5 Flare", method: "POST", endpoint: "https://zone.api.br/api/v1/gptimage25flare", params: [{ name: "text", label: "Prompt de Geração / Edição", type: "text", default: "futuristic warrior neon lights" }] },
-          { id: "gptimage25sunburst", name: "GPT Image 2.5 Sunburst", method: "POST", endpoint: "https://zone.api.br/api/v1/gptimage25sunburst", params: [{ name: "text", label: "Prompt de Geração", type: "text", default: "majestic dragon flying over misty mountains" }] },
-          { id: "nanobanana2", name: "Nano Banana 2 (Texto p/ Imagem)", method: "POST", endpoint: "https://zone.api.br/api/v2/nanobanana2-texto", params: [{ name: "text", label: "Prompt de Imagem", type: "text", default: "an astronaut discovering an alien temple" }] },
-          { id: "grokimagine", name: "Grok Imagine (xAI)", method: "POST", endpoint: "https://zone.api.br/api/v1/grokimagine", params: [{ name: "text", label: "Prompt", type: "text", default: "a hyperrealistic portrait of a cyborg samurai" }] },
           { id: "toghibli", name: "To Ghibli (Estilo Studio Ghibli)", method: "GET", endpoint: "https://zone.api.br/api/toghibli", params: [{ name: "url", label: "URL da Imagem de Entrada", type: "url", default: "https://images.unsplash.com/photo-1543610892-0b1f7e6d8ac1" }] },
           { id: "faceswap", name: "Face Swap (Troca de Rosto IA)", method: "GET", endpoint: "https://zone.api.br/api/edit/faceswap", params: [{ name: "target", label: "URL Imagem Destino", type: "url", default: "https://..." }, { name: "source", label: "URL Imagem do Rosto", type: "url", default: "https://..." }] },
-          { id: "qwen_edit", name: "Qwen Image Edit 2K", method: "POST", endpoint: "https://zone.api.br/api/v2/qwen-edit", params: [{ name: "url", label: "URL Imagem", type: "url", default: "https://..." }, { name: "prompt", label: "Instruções de Edição", type: "text", default: "Adicione óculos escuros no personagem" }] }
+          { id: "qwen_edit", name: "Qwen Image Edit 2K", method: "POST", endpoint: "https://zone.api.br/api/v2/qwen-edit", params: [{ name: "url", label: "URL Imagem", type: "url", default: "https://..." }, { name: "prompt", label: "Instruções de Edição", type: "text", default: "Adicione óculos escuros no personagem" }] },
+          { id: "deepai_edit", name: "DeepAI Image Editor", method: "POST", endpoint: "https://zone.api.br/api/v2/edit/deepai", params: [{ name: "url", label: "URL Imagem", type: "url", default: "https://..." }, { name: "prompt", label: "Prompt de Edição", type: "text", default: "vintage retro style" }] },
+          { id: "nanolite", name: "Nano Banana Lite", method: "POST", endpoint: "https://zone.api.br/api/v2/nanolite", params: [{ name: "text", label: "Prompt de Imagem", type: "text", default: "a futuristic flying car" }] }
         ]
       },
       {
-        category: "🎙️ Voz, TTS & Áudio",
+        category: "🎙️ Voz, TTS & Áudio Free",
         routes: [
           { id: "ttskordix", name: "TTS Kordix (+200k Vozes / Famosos)", method: "GET", endpoint: "https://zone.api.br/api/tts-kordix", params: [{ name: "text", label: "Texto para Falar", type: "text", default: "Fala pessoal! Testando o proxy rotativo da SystemZone." }, { name: "voice", label: "Voz (ex: lula, elon_musk, goku, batman)", type: "text", default: "goku" }] },
           { id: "ttsgoogle", name: "TTS Google (Tradutor)", method: "GET", endpoint: "https://zone.api.br/api/tts-google", params: [{ name: "text", label: "Texto para Falar", type: "text", default: "Olá mundo! Voz oficial do Google." }, { name: "lang", label: "Idioma (pt, en, es, ja)", type: "text", default: "pt" }] },
-          { id: "ttsgemini", name: "TTS Gemini 3.1 Flash", method: "GET", endpoint: "https://zone.api.br/api/tts/gemini", params: [{ name: "text", label: "Texto para Falar", type: "text", default: "Mensagem em áudio com inteligência artificial." }] },
+          { id: "tts", name: "TTS Catálogo Geral", method: "GET", endpoint: "https://zone.api.br/api/tts", params: [{ name: "text", label: "Texto", type: "text", default: "Bem vindo ao sistema." }, { name: "model", label: "Modelo ou Nome da Voz", type: "text", default: "narrador" }] },
+          { id: "tts2", name: "TTS 2", method: "GET", endpoint: "https://zone.api.br/api/v2/tts2", params: [{ name: "text", label: "Texto para converter em áudio", type: "text", default: "Olá, áudio gerado com sucesso." }] },
           { id: "tts3", name: "TTS 3 (Expressivo Multilingual)", method: "GET", endpoint: "https://zone.api.br/api/v2/tts3", params: [{ name: "text", label: "Texto (aceita 'sussurrando', 'voz fina', etc.)", type: "text", default: "Voz suave: Olá, tudo bem com você?" }] },
-          { id: "music_ia", name: "Música IA (Compositor Completo)", method: "POST", endpoint: "https://zone.api.br/api/music-ia", params: [{ name: "letra", label: "Letra da Música", type: "text", default: "Noites de neon, código na tela, IPv6 girando na favela." }, { name: "estilo", label: "Gênero (Trap, Funk, Rock, Lo-fi)", type: "text", default: "Trap" }] }
+          { id: "voiceclone", name: "Clonar Voz", method: "POST", endpoint: "https://zone.api.br/api/voice-clone", params: [{ name: "url", label: "URL do Áudio Limpo de Referência", type: "url", default: "https://..." }, { name: "text", label: "Texto para a voz clonada falar", type: "text", default: "Estou falando com a voz clonada perfeitamente." }] },
+          { id: "music_ia", name: "Música IA (Compositor)", method: "POST", endpoint: "https://zone.api.br/api/music-ia", params: [{ name: "letra", label: "Letra da Música", type: "text", default: "Noites de neon, código na tela, IPv6 girando na favela." }, { name: "estilo", label: "Gênero (Trap, Funk, Rock, Lo-fi)", type: "text", default: "Trap" }] },
+          { id: "music_aprimorar", name: "Música IA (Aprimorar Letra)", method: "POST", endpoint: "https://zone.api.br/api/music-ia/aprimorar-letra", params: [{ name: "text", label: "Sua Letra Bruta", type: "text", default: "Eu ando pela cidade pensando em você" }] },
+          { id: "moises", name: "Moises AI (Vocal Remover)", method: "POST", endpoint: "https://zone.api.br/api/v1/audio/moises", params: [{ name: "url", label: "URL do Áudio da Música", type: "url", default: "https://..." }] },
+          { id: "vid2audio", name: "Vídeo para Áudio (MP3/WAV)", method: "POST", endpoint: "https://zone.api.br/api/ferramentas/video-para-audio", params: [{ name: "url", label: "URL do Vídeo", type: "url", default: "https://..." }, { name: "format", label: "Formato (mp3, wav, m4a)", type: "text", default: "mp3" }] },
+          { id: "audiomemes", name: "Áudios Memes (Busca & Download)", method: "GET", endpoint: "https://zone.api.br/api/audiomemes", params: [{ name: "text", label: "Nome do Meme (ex: ué, errou)", type: "text", default: "ué" }] }
         ]
       },
       {
-        category: "🔍 Buscas & Pesquisas",
+        category: "🔍 Buscas & Pesquisas Free",
         routes: [
           { id: "gimage", name: "Google Image Search", method: "GET", endpoint: "https://zone.api.br/api/search/gimage", params: [{ name: "text", label: "Termo de Imagem", type: "text", default: "Papel de parede 4K" }] },
           { id: "ytsearch", name: "YouTube Search", method: "GET", endpoint: "https://zone.api.br/api/ytsearch", params: [{ name: "text", label: "Busca de Vídeos", type: "text", default: "Trap Brasil 2026" }] },
+          { id: "ytsearch2", name: "YouTube Search 2 (Canais/Lives)", method: "GET", endpoint: "https://zone.api.br/api/V2/search/youtube", params: [{ name: "text", label: "Termo de Busca", type: "text", default: "Ao Vivo Notícias" }] },
           { id: "spotsearch", name: "Spotify Search", method: "GET", endpoint: "https://zone.api.br/api/search/spotify", params: [{ name: "text", label: "Música ou Artista", type: "text", default: "KayBlack" }] },
           { id: "tiktoksearch", name: "TikTok Search", method: "GET", endpoint: "https://zone.api.br/api/tiktok/search", params: [{ name: "text", label: "Hashtag ou Tema", type: "text", default: "programação" }] },
           { id: "appstore", name: "Apple App Store Search", method: "GET", endpoint: "https://zone.api.br/search/appstore", params: [{ name: "text", label: "Nome do App", type: "text", default: "Telegram" }] },
-          { id: "roblox", name: "Roblox Search (Usuário)", method: "GET", endpoint: "https://zone.api.br/api/search/roblox", params: [{ name: "text", label: "Nome de Usuário Roblox", type: "text", default: "Roblox" }] }
+          { id: "apple_music", name: "Apple Music Search", method: "GET", endpoint: "https://zone.api.br/search/apple", params: [{ name: "text", label: "Música", type: "text", default: "The Weeknd" }] },
+          { id: "bingimg", name: "Bing Image Search", method: "GET", endpoint: "https://zone.api.br/api/search/bingimg", params: [{ name: "text", label: "Termo de Imagem", type: "text", default: "natureza 4k" }] },
+          { id: "roblox", name: "Roblox Search (Usuário)", method: "GET", endpoint: "https://zone.api.br/api/search/roblox", params: [{ name: "text", label: "Nome de Usuário Roblox", type: "text", default: "Roblox" }] },
+          { id: "roblox_top", name: "Roblox Top Jogos Atuais", method: "GET", endpoint: "https://zone.api.br/api/search/roblox-top-players", params: [] },
+          { id: "anime_search", name: "Anime Search", method: "GET", endpoint: "https://zone.api.br/api/anime/search", params: [{ name: "text", label: "Nome do Anime", type: "text", default: "Naruto" }] },
+          { id: "letras", name: "Letras de Música", method: "GET", endpoint: "https://zone.api.br/api/v2/letras", params: [{ name: "text", label: "Música ou Artista", type: "text", default: "Bohemian Rhapsody Queen" }] },
+          { id: "serie_busca", name: "Série Busca (TMDB)", method: "GET", endpoint: "https://zone.api.br/api/v1/serie/busca", params: [{ name: "text", label: "Nome da Série", type: "text", default: "Breaking Bad" }] },
+          { id: "serie_info", name: "Série Ficha & Episódios", method: "GET", endpoint: "https://zone.api.br/api/v1/serie/info", params: [{ name: "id", label: "ID da Série no TMDB", type: "text", default: "1396" }] }
         ]
       },
       {
-        category: "🛠️ Utilitários, Análises & Ferramentas",
+        category: "🛠️ Utilitários & Ferramentas Free",
         routes: [
           { id: "removebg", name: "Remove Background (Sem Fundo)", method: "POST", endpoint: "https://zone.api.br/api/removebg", params: [{ name: "url", label: "URL da Imagem", type: "url", default: "https://..." }] },
+          { id: "aienhancer", name: "AI Enhancer (Melhorar Qualidade)", method: "POST", endpoint: "https://zone.api.br/api/ferramentas/aienhancer", params: [{ name: "url", label: "URL da Imagem", type: "url", default: "https://..." }] },
           { id: "upscaler", name: "Upscaler HD (2x/4x)", method: "POST", endpoint: "https://zone.api.br/api/upscaler", params: [{ name: "url", label: "URL da Imagem para Aumentar Resolução", type: "url", default: "https://..." }] },
+          { id: "upscaler2", name: "Upscaler 2 (Bicúbico + Nitidez)", method: "POST", endpoint: "https://zone.api.br/api/upscaler2", params: [{ name: "url", label: "URL da Imagem", type: "url", default: "https://..." }] },
           { id: "ocr", name: "OCR (Extrair Texto de Imagem)", method: "POST", endpoint: "https://zone.api.br/api/ocr", params: [{ name: "url", label: "URL da Imagem com Texto", type: "url", default: "https://..." }] },
-          { id: "cep", name: "Consulta CEP", method: "GET", endpoint: "https://zone.api.br/api/v2/cep", params: [{ name: "cep", label: "CEP (8 dígitos)", type: "text", default: "01001000" }] },
+          { id: "rostos", name: "Detector de Rostos (Idade/Expressão)", method: "GET", endpoint: "https://zone.api.br/api/rostos", params: [{ name: "url", label: "URL da Foto ou Vídeo", type: "url", default: "https://..." }] },
           { id: "consulta_ip", name: "Consulta IP & Geolocalização", method: "GET", endpoint: "https://zone.api.br/api/consulta/ip", params: [{ name: "ip", label: "Endereço IP", type: "text", default: "8.8.8.8" }] },
           { id: "consulta_placa", name: "Consulta Placa de Veículo", method: "GET", endpoint: "https://zone.api.br/api/consultas/placa", params: [{ name: "placa", label: "Placa do Carro/Moto", type: "text", default: "BRA2E19" }] },
-          { id: "bypass", name: "Bypass de Link (Linkvertise, etc.)", method: "GET", endpoint: "https://zone.api.br/api/v1/bypass", params: [{ name: "url", label: "Link com Encurtador/Anúncios", type: "url", default: "https://linkvertise.com/..." }] },
+          { id: "feriados", name: "Feriados Nacionais por Ano", method: "GET", endpoint: "https://zone.api.br/api/consulta/feriados", params: [{ name: "ano", label: "Ano (ex: 2026)", type: "text", default: "2026" }] },
           { id: "tradutor", name: "Tradutor de Idiomas", method: "GET", endpoint: "https://zone.api.br/api/translate", params: [{ name: "text", label: "Texto para Traduzir", type: "text", default: "Hello, this is a rotating IPv6 test." }, { name: "to", label: "Para o Idioma (pt, en, es, fr)", type: "text", default: "pt" }] },
           { id: "stylish", name: "Stylish Text (119 Fontes Unicode)", method: "GET", endpoint: "https://zone.api.br/api/v2/stylish-text", params: [{ name: "text", label: "Texto para Estilizar", type: "text", default: "SystemZone" }] },
           { id: "emojimix", name: "Emoji Mix (Fusão de Emojis)", method: "GET", endpoint: "https://zone.api.br/api/v1/emojimix", params: [{ name: "emoji1", label: "Primeiro Emoji", type: "text", default: "😎" }, { name: "emoji2", label: "Segundo Emoji", type: "text", default: "🔥" }] },
           { id: "shazam", name: "Shazam (Identificar Música)", method: "POST", endpoint: "https://zone.api.br/api/shazam", params: [{ name: "url", label: "URL do Áudio para Reconhecer", type: "url", default: "https://..." }] },
-          { id: "cf_solver", name: "Cloudflare Turnstile Solver", method: "GET", endpoint: "https://zone.api.br/api/v2/cf-solver/solve", params: [{ name: "url", label: "URL do Site Protegido por Turnstile", type: "url", default: "https://..." }] }
+          { id: "towebp", name: "MP4 para WEBP Animado", method: "POST", endpoint: "https://zone.api.br/api/ferramentas/towebp", params: [{ name: "url", label: "URL do Vídeo MP4", type: "url", default: "https://..." }] },
+          { id: "tomp4", name: "WEBP (Figurinha) para MP4", method: "POST", endpoint: "https://zone.api.br/api/ferramentas/tomp4", params: [{ name: "url", label: "URL da Figurinha WEBP", type: "url", default: "https://..." }] },
+          { id: "npm", name: "NPM Downloader (ZIP Nativo)", method: "GET", endpoint: "https://zone.api.br/api/npm", params: [{ name: "package", label: "Nome do Pacote NPM", type: "text", default: "express" }] },
+          { id: "savesitezip", name: "Save Site ZIP (Clonar Site)", method: "GET", endpoint: "https://zone.api.br/api/savesitezip", params: [{ name: "url", label: "URL do Site", type: "url", default: "https://example.com" }] },
+          { id: "audio_rapido", name: "Voz para Texto (Áudio Rápido)", method: "POST", endpoint: "https://zone.api.br/api/ia/audio-rapido", params: [{ name: "url", label: "URL do Áudio", type: "url", default: "https://..." }] }
         ]
       },
       {
-        category: "🎭 Stalkers & Memes Canvas",
+        category: "🎭 Stalkers & Memes Canvas Free",
         routes: [
           { id: "igstalk", name: "Instagram Stalk (Perfil Público)", method: "GET", endpoint: "https://zone.api.br/api/igstalk", params: [{ name: "user", label: "Username do Instagram", type: "text", default: "neymarjr" }] },
           { id: "tiktokstalk", name: "TikTok Stalk", method: "GET", endpoint: "https://zone.api.br/api/tiktok/stalk", params: [{ name: "user", label: "Username do TikTok", type: "text", default: "tiktok" }] },
           { id: "twitterstalk", name: "Twitter / X Stalk", method: "GET", endpoint: "https://zone.api.br/api/twitterstalk", params: [{ name: "user", label: "Username do Twitter", type: "text", default: "elonmusk" }] },
-          { id: "ffstalk", name: "Free Fire Stalk V2", method: "GET", endpoint: "https://zone.api.br/api/ffstalkv2", params: [{ name: "id", label: "ID do Jogador FF (Região Brasil)", type: "text", default: "12345678" }] },
+          { id: "kwaistalk", name: "Kwai Stalk", method: "GET", endpoint: "https://zone.api.br/api/kwai/stalk", params: [{ name: "user", label: "Username do Kwai", type: "text", default: "..." }] },
+          { id: "steamstalk", name: "Steam Stalk", method: "GET", endpoint: "https://zone.api.br/api/steamstalk", params: [{ name: "user", label: "Steam ID ou Vanity URL", type: "text", default: "..." }] },
+          { id: "ffstalk", name: "Free Fire Stalk (Dados Região BR)", method: "GET", endpoint: "https://zone.api.br/api/ffstalk", params: [{ name: "id", label: "ID do Jogador FF", type: "text", default: "12345678" }] },
+          { id: "ffstalkv2", name: "Free Fire Stalk V2 (Gráfico Radar)", method: "GET", endpoint: "https://zone.api.br/api/ffstalkv2", params: [{ name: "id", label: "ID do Jogador FF", type: "text", default: "12345678" }] },
           { id: "canvas_balanco", name: "Canvas: Balanço Geral (O Caso)", method: "GET", endpoint: "https://zone.api.br/api/canvas/balanco-geral", params: [{ name: "url", label: "URL da Foto", type: "url", default: "https://..." }, { name: "manchete", label: "Manchete Principal", type: "text", default: "DESCOBERTO O SEGREDO DO IPV6" }] },
-          { id: "canvas_procurado", name: "Canvas: Cartaz de Procurado", method: "GET", endpoint: "https://zone.api.br/api/canvas/procurado", params: [{ name: "url", label: "URL da Foto", type: "url", default: "https://..." }, { name: "valor", label: "Valor da Recompensa", type: "text", default: "R$ 1.000.000" }] }
+          { id: "canvas_procurado", name: "Canvas: Cartaz de Procurado", method: "GET", endpoint: "https://zone.api.br/api/canvas/procurado", params: [{ name: "url", label: "URL da Foto", type: "url", default: "https://..." }, { name: "valor", label: "Valor da Recompensa", type: "text", default: "R$ 1.000.000" }] },
+          { id: "canvas_banana", name: "Canvas: Banana Dançando", method: "GET", endpoint: "https://zone.api.br/api/canvas/banana", params: [{ name: "url", label: "URL da Foto com Rosto", type: "url", default: "https://..." }] },
+          { id: "canvas_bob", name: "Canvas: Bob Esponja Queimando Papel", method: "GET", endpoint: "https://zone.api.br/api/canvas/bob-esponja", params: [{ name: "url", label: "URL da Foto", type: "url", default: "https://..." }] },
+          { id: "canvas_dexter", name: "Canvas: Dexter Chorando Olhando Foto", method: "GET", endpoint: "https://zone.api.br/api/canvas/dexter", params: [{ name: "url", label: "URL da Foto", type: "url", default: "https://..." }] },
+          { id: "canvas_lapide", name: "Canvas: Lula Molusco na Lápide", method: "GET", endpoint: "https://zone.api.br/api/canvas/lapide", params: [{ name: "url", label: "URL da Foto", type: "url", default: "https://..." }] },
+          { id: "canvas_discord", name: "Canvas: Mensagem Fake do Discord", method: "GET", endpoint: "https://zone.api.br/api/canvas/discordfake", params: [{ name: "nome", label: "Nome do Usuário", type: "text", default: "Light" }, { name: "text", label: "Mensagem", type: "text", default: "IPv6 rotacionado com sucesso!" }] },
+          { id: "canvas_whatsapp", name: "Canvas: Mensagem Fake do WhatsApp", method: "GET", endpoint: "https://zone.api.br/api/canvas/whatsappfake", params: [{ name: "nome", label: "Nome do Contato", type: "text", default: "SystemZone" }, { name: "text", label: "Mensagem", type: "text", default: "Requisição entregue." }] }
         ]
       },
       {
-        category: "🔞 Conteúdo Adulto (+18)",
+        category: "🔞 Conteúdo Adulto Free (+18)",
         routes: [
           { id: "tikporn", name: "TikPorn (Feed / Busca)", method: "GET", endpoint: "https://zone.api.br/api/search/tikporn", params: [{ name: "text", label: "Busca TikPorn", type: "text", default: "hot" }] },
           { id: "xnxx_down", name: "XNXX Downloader", method: "GET", endpoint: "https://zone.api.br/api/xnxx/download", params: [{ name: "url", label: "URL do Vídeo XNXX", type: "url", default: "https://www.xnxx.com/video-..." }] },
@@ -638,7 +682,7 @@
 
     let currentSelectedRoute = ROUTES_CATALOG[0].routes[0];
 
-    // Renderizar Lista Lateral de Rotas com Contagem
+    // Renderizar Lista Lateral de Rotas Gratuitas
     function renderRoutesList(filter = "") {
       const listEl = document.getElementById('routesList');
       listEl.innerHTML = "";
