@@ -2,7 +2,7 @@
 
 Proxy HTTP intermediador multiplataforma (**Windows e Linux**) que realiza rotação dinâmica de endereços IPv6 a partir de um bloco `/64`.
 
-Cada IPv6 temporário é gerado matematicamente com 128-bits (`BigInt`), adicionado à placa de rede, utilizado para processar até **15 requisições** em alta velocidade e desalocado automaticamente sem deixar rastros.
+Cada IPv6 temporário é gerado matematicamente com 128-bits (`BigInt`), configurado na interface de rede, utilizado para processar até **15 requisições** em altíssima velocidade e desalocado automaticamente sem deixar resíduos.
 
 ---
 
@@ -28,7 +28,7 @@ Cada IPv6 temporário é gerado matematicamente com 128-bits (`BigInt`), adicion
 
 ---
 
-## 💻 Como Executar
+## 💻 Como Executar o Servidor
 
 ### 1. Iniciar no Windows:
 Abra o **PowerShell** ou **CMD** como Administrador e execute:
@@ -46,7 +46,7 @@ O servidor detectará automaticamente sua interface de rede e a rede IPv6 global
 ====================================================
    PROXY INTERMEDIADOR IPv6 ROTATIVO (CROSS-PLATFORM)
 ====================================================
-Interface            : eth0 (ou Interface Index no Windows)
+Interface            : wlan0 (ou Interface Index no Windows)
 Rede IPv6 Base       : 2804:xxxx:xxxx:xxxx:0:0:0:0/64
 Limite por IPv6      : 15 requisições
 ====================================================
@@ -56,71 +56,81 @@ Pronto para intermediar até 15 requisições por IPv6!
 
 ---
 
-## 📡 Como Usar o Proxy
+## 📡 Exemplos Práticos de Uso com a SystemZone API
 
-Você pode enviar requisições de qualquer linguagem ou ferramenta para o proxy informando a URL que deseja acessar.
+Você pode chamar o proxy de qualquer aplicação informando a rota da SystemZone API que deseja consultar.
 
-### Opção 1: Via Header `X-Target-URL` (Recomendado)
+### 1. Instagram Downloader (Baixar Vídeos, Fotos e Reels)
 
-#### Exemplo em cURL:
+#### Via Header `X-Target-URL` (Recomendado):
 ```bash
-curl -H "X-Target-URL: https://api.ipify.org?format=json" http://localhost:3000
+curl -H "X-Target-URL: https://zone.api.br/api/V2/instagram?apikey=SUA_KEY&url=https://www.instagram.com/reels/Df-DeM8P4aI/" http://localhost:3000
 ```
 
-#### Exemplo em JavaScript (Node.js / Browser / Fetch):
+#### Via Query Parameter (`?url=...`):
+```bash
+curl "http://localhost:3000/?url=https://zone.api.br/api/V2/instagram?apikey=SUA_KEY%26url=https://www.instagram.com/reels/Df-DeM8P4aI/"
+```
+
+#### Exemplo em JavaScript (Node.js / Fetch):
 ```javascript
+const destino = 'https://zone.api.br/api/V2/instagram?apikey=SUA_KEY&url=https://www.instagram.com/reels/Df-DeM8P4aI/';
+
 const response = await fetch('http://localhost:3000', {
   headers: {
-    'X-Target-URL': 'https://api.ipify.org?format=json'
+    'X-Target-URL': destino
   }
 });
+
 const data = await response.json();
-console.log(data);
+console.log('Vídeo para download:', data.media[0]);
 ```
 
 #### Exemplo em Python (`requests`):
 ```python
 import requests
 
-res = requests.get(
+url_destino = 'https://zone.api.br/api/V2/instagram?apikey=SUA_KEY&url=https://www.instagram.com/reels/Df-DeM8P4aI/'
+
+resposta = requests.get(
     'http://localhost:3000',
-    headers={'X-Target-URL': 'https://api.ipify.org?format=json'}
+    headers={'X-Target-URL': url_destino}
 )
-print(res.json())
+
+dados = resposta.json()
+print("Link da mídia:", dados['media'][0])
 ```
 
 ---
 
-### Opção 2: Via Query Param (`?url=...`)
-
-Ideal para testes rápidos pelo navegador ou chamadas cURL simples:
+### 2. ChatGPT (Consultas de IA)
 
 ```bash
-curl "http://localhost:3000/?url=https://api.ipify.org?format=json"
+curl -H "X-Target-URL: https://zone.api.br/api/v2/chatgpt?text=Qual+a+capital+da+França?&apikey=SUA_KEY" http://localhost:3000
 ```
 
 ---
 
-### Opção 3: Via Caminho Direto
+### 3. Microsoft Copilot
 
 ```bash
-curl "http://localhost:3000/https://api.ipify.org?format=json"
+curl -H "X-Target-URL: https://zone.api.br/api/copilot?text=Explique+IPv6&apikey=SUA_KEY" http://localhost:3000
 ```
 
 ---
 
 ## ⚙️ Configurações
 
-No topo do arquivo `proxy.js`, você pode personalizar:
+No topo do arquivo `proxy.js`, você pode personalizar as variáveis de ambiente:
 
 ```javascript
-const PORT = process.env.PORT || 3000; // Porta do servidor intermediador
-const HOST = '0.0.0.0';                // Permite acesso de outros dispositivos na rede
-const MAX_REQS_PER_IP = 15;            // Quantidade de requisições antes de rotacionar o IPv6
+const PORT = process.env.PORT || 3000; // Porta onde o proxy escuta
+const HOST = '0.0.0.0';                // Permite acesso pela rede local ou externa
+const MAX_REQS_PER_IP = 15;            // Quantidade de requisições por IPv6 antes da rotação
 ```
 
 ---
 
 ## 📄 Licença
 
-MIT License. Sinta-se livre para usar e modificar.
+MIT License. Desenvolvido para uso com a SystemZone API.

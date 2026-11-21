@@ -1,3 +1,18 @@
+/**
+ * ==============================================================================
+ * PROXY INTERMEDIADOR COM ROTAÇÃO DINÂMICA DE IPv6 (CROSS-PLATFORM)
+ * ==============================================================================
+ * 
+ * Funcionalidade:
+ *  - Intermedeia requisições HTTP/HTTPS para qualquer API de destino.
+ *  - Aloca dinamicamente novos endereços IPv6 aleatórios a partir de um bloco /64.
+ *  - Suporta até 15 requisições por endereço IPv6 antes de efetuar a rotação.
+ *  - Totalmente compatível com Windows (PowerShell/netsh) e Linux (iproute2/ip).
+ *  - Zero dependências externas (utiliza apenas módulos nativos do Node.js).
+ * 
+ * ==============================================================================
+ */
+
 const http = require('http');
 const https = require('https');
 const crypto = require('crypto');
@@ -5,16 +20,22 @@ const os = require('os');
 const { execSync, execFileSync } = require('child_process');
 const { URL } = require('url');
 
+// Identificação da plataforma
 const IS_WINDOWS = process.platform === 'win32';
 const IS_LINUX = process.platform === 'linux';
 
+// Configurações do Servidor
 const PORT = process.env.PORT || 3000;
-const HOST = '0.0.0.0';
-const MAX_REQS_PER_IP = 15; // Cada IPv6 executa até 15 requisições antes de trocar
+const HOST = '0.0.0.0'; // Permite conexões de qualquer IP (local ou rede externa)
+const MAX_REQS_PER_IP = 15; // Quantidade de requisições que cada IPv6 processa antes de rotacionar
 
+// Helper para pausas assíncronas
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-// Fila para sincronizar operações de rede no sistema operacional
+/**
+ * Fila de sincronização (Mutex) para operações de rede no Sistema Operacional.
+ * Evita colisões caso múltiplas requisições tentem adicionar/remover IPs simultaneamente.
+ */
 let netLockQueue = Promise.resolve();
 function withNetLock(fn) {
   const res = netLockQueue.then(fn);
@@ -22,7 +43,10 @@ function withNetLock(fn) {
   return res;
 }
 
-// 1. Verifica privilégio de administrador (Windows: net session | Linux: root UID 0)
+/**
+ * Valida se o processo atual possui privilégios administrativos necessários
+ * para manipular interfaces de rede (netsh no Windows, iproute2 no Linux).
+ */
 function isAdmin() {
   if (IS_WINDOWS) {
     try {
@@ -32,10 +56,14 @@ function isAdmin() {
       return false;
     }
   } else {
+    // No Linux/Unix, root possui UID 0
     return process.getuid ? process.getuid() === 0 : false;
   }
 }
 
+/**
+ * Executa comandos PowerShell no Windows de forma segura e sem carregar perfis.
+ */
 function powershell(command) {
   const stdout = execFileSync('powershell.exe', ['-NoProfile', '-Command', command], {
     encoding: 'utf-8',
@@ -44,7 +72,10 @@ function powershell(command) {
   return stdout.trim();
 }
 
-// 2. Manipulação de IPv6 com BigInt (128 bits)
+/**
+ * Converte uma string de endereço IPv6 (mesmo compactada com '::')
+ * para um BigInt nativo de 128 bits.
+ */
 function ipToBigInt(ip) {
   const clean = ip.split('%')[0].trim();
   const parts = clean.split('::');
@@ -58,6 +89,9 @@ function ipToBigInt(ip) {
   return BigInt('0x' + full.join(''));
 }
 
+/**
+ * Converte um BigInt de 128 bits de volta para uma representação em string IPv6.
+ */
 function bigIntToIPv6(bn) {
   const hex = bn.toString(16).padStart(32, '0');
   const groups = [];
@@ -67,18 +101,25 @@ function bigIntToIPv6(bn) {
   return groups.join(':');
 }
 
+/**
+ * Verifica se o endereço IPv6 é público e globalmente roteável (Global Unicast).
+ * Descarta faixas Link-Local (fe80::), Unique Local (fc00::) e Multicast (ff00::).
+ */
 function isGlobalIPv6(bn) {
   const hex = bn.toString(16).padStart(32, '0');
   const firstHextet = parseInt(hex.substring(0, 4), 16);
 
-  if ((firstHextet & 0xffc0) === 0xfe80) return false; // Link-local
-  if ((firstHextet & 0xfe00) === 0xfc00) return false; // Unique local
-  if ((firstHextet & 0xff00) === 0xff00) return false; // Multicast
+  if ((firstHextet & 0xffc0) === 0xfe80) return false; // Link-local (fe80::/10)
+  if ((firstHextet & 0xfe00) === 0xfc00) return false; // Unique Local (fc00::/7)
+  if ((firstHextet & 0xff00) === 0xff00) return false; // Multicast (ff00::/8)
 
-  return firstHextet >= 0x2000 && firstHextet <= 0x3fff; // Global Unicast
+  return firstHextet >= 0x2000 && firstHextet <= 0x3fff; // Faixa Global 2000::/3
 }
 
-// 3. Detecção de interface e rede IPv6 /64 (Windows & Linux)
+/**
+ * Detecta a interface de rede ativa que possui rota padrão IPv6 (::/0)
+ * e extrai o prefixo de sub-rede /64 associado.
+ */
 function detectarRede() {
   const MASK_64 = 0xffffffffffffffff0000000000000000n;
 
@@ -108,7 +149,7 @@ function detectarRede() {
       }
     }
   } else if (IS_LINUX) {
-    // 1. Descobrir interface da rota padrão IPv6
+    // 1. Encontra a interface da rota padrão default
     const routeOut = execFileSync('ip', ['-6', 'route', 'show', 'default'], { encoding: 'utf-8' });
     const devMatch = routeOut.match(/dev\s+([^\s]+)/);
     if (!devMatch) {
@@ -116,7 +157,7 @@ function detectarRede() {
     }
     const iface = devMatch[1];
 
-    // 2. Descobrir IP global /64 nessa interface
+    // 2. Extrai o IP global /64 associado a essa interface
     const addrOut = execFileSync('ip', ['-6', 'addr', 'show', 'dev', iface, 'scope', 'global'], { encoding: 'utf-8' });
     const lines = addrOut.split('\n');
 
@@ -137,13 +178,18 @@ function detectarRede() {
   throw new Error(`Nenhuma interface com IPv6 global /64 e rota padrão encontrada no ${os.type()}.`);
 }
 
+/**
+ * Gera um novo endereço IPv6 aleatório mantendo o prefixo /64 da rede.
+ */
 function gerarIPv6(networkBase) {
   const randomBytes = crypto.randomBytes(8);
   const host = BigInt('0x' + randomBytes.toString('hex'));
   return bigIntToIPv6(networkBase | host);
 }
 
-// 4. Operações de adição/remoção de IP multiplataforma
+/**
+ * Adiciona um endereço IPv6 temporário na interface de rede do SO.
+ */
 function adicionarIPv6(interfaceId, ip) {
   return withNetLock(() => {
     if (IS_WINDOWS) {
@@ -153,12 +199,15 @@ function adicionarIPv6(interfaceId, ip) {
         'store=active', 'skipassource=true'
       ], { stdio: 'pipe' });
     } else {
-      // Linux: adiciona com /64 e 'nodad' para ativação imediata
+      // No Linux, 'nodad' pula a verificação DAD e disponibiliza o IP de imediato
       execFileSync('ip', ['-6', 'addr', 'add', `${ip}/64`, 'dev', String(interfaceId), 'nodad'], { stdio: 'pipe' });
     }
   });
 }
 
+/**
+ * Remove o endereço IPv6 temporário da interface após o término de sua utilização.
+ */
 function removerIPv6(interfaceId, ip) {
   return withNetLock(() => {
     try {
@@ -172,11 +221,14 @@ function removerIPv6(interfaceId, ip) {
         execFileSync('ip', ['-6', 'addr', 'del', `${ip}/64`, 'dev', String(interfaceId)], { stdio: 'pipe' });
       }
     } catch (e) {
-      // Ignora se já foi removido
+      // Ignora silenciosamente caso o IP já tenha sido desalocado
     }
   });
 }
 
+/**
+ * Aguarda até que o IPv6 novo seja registrado pelo kernel e esteja pronto para envio.
+ */
 async function aguardarIPv6(interfaceId, ip) {
   if (IS_WINDOWS) {
     for (let i = 0; i < 20; i++) {
@@ -192,7 +244,7 @@ async function aguardarIPv6(interfaceId, ip) {
     }
     throw new Error('IPv6 não ficou disponível dentro do tempo limite no Windows');
   } else {
-    // No Linux com 'nodad', a disponibilidade é quase instantânea
+    // No Linux com nodad a ativação é imediata; apenas valida a ausência de 'tentative'
     for (let i = 0; i < 20; i++) {
       try {
         const out = execFileSync('ip', ['-6', 'addr', 'show', 'dev', String(interfaceId), 'to', ip], { encoding: 'utf-8' });
@@ -205,7 +257,10 @@ async function aguardarIPv6(interfaceId, ip) {
   }
 }
 
-// 5. Gerenciador de Sessão com Rotação a cada 15 requisições
+/**
+ * Gerenciador de Sessão e Lote de IPv6.
+ * Mantém o mesmo IPv6 ativo por até 15 requisições antes de rotacionar.
+ */
 class IPv6SessionManager {
   constructor(interfaceId, networkBase, maxUses = 15) {
     this.interfaceId = interfaceId;
@@ -217,6 +272,10 @@ class IPv6SessionManager {
     this.mutex = Promise.resolve();
   }
 
+  /**
+   * Obtém um IPv6 válido para a requisição atual.
+   * Se o IP atual atingiu o limite de usos, cria um novo automaticamente.
+   */
   async acquireLease() {
     let release;
     const lock = new Promise((res) => { release = res; });
@@ -231,7 +290,7 @@ class IPv6SessionManager {
     try {
       if (!this.currentLease || this.currentLease.uses >= this.maxUses) {
         if (this.currentLease) {
-          console.log(`\n[ROTAÇÃO] IPv6 ${this.currentLease.ip} atingiu ${this.maxUses} requisições.`);
+          console.log(`\n[ROTAÇÃO] IPv6 ${this.currentLease.ip} atingiu o limite de ${this.maxUses} requisições.`);
           this.currentLease.retired = true;
           this.checkRetireLease(this.currentLease);
         }
@@ -260,6 +319,9 @@ class IPv6SessionManager {
     }
   }
 
+  /**
+   * Notifica que uma requisição em andamento terminou de utilizar o IPv6.
+   */
   releaseLease(lease) {
     lease.inFlight--;
     if (lease.retired && lease.inFlight === 0) {
@@ -267,6 +329,10 @@ class IPv6SessionManager {
     }
   }
 
+  /**
+   * Remove o IPv6 da interface de rede somente quando ele estiver aposentado (retired)
+   * e não houver mais nenhuma requisição em trânsito (inFlight === 0).
+   */
   async checkRetireLease(lease) {
     if (lease.retired && lease.inFlight === 0 && this.allActiveIps.has(lease.ip)) {
       this.allActiveIps.delete(lease.ip);
@@ -275,6 +341,9 @@ class IPv6SessionManager {
     }
   }
 
+  /**
+   * Limpa todos os IPs temporários alocados durante a execução do processo.
+   */
   async cleanupAll() {
     console.log(`Limpando todos os IPv6 temporários ativos (${this.allActiveIps.size})...`);
     for (const ip of this.allActiveIps) {
@@ -289,7 +358,12 @@ class IPv6SessionManager {
   }
 }
 
-// 6. Extrai a URL de destino da requisição
+/**
+ * Extrai a URL de destino a partir da requisição recebida:
+ * 1. Pelo Header HTTP 'X-Target-URL'
+ * 2. Pelo parâmetro na Query '?url=https://...'
+ * 3. Pelo caminho direto na URL '/https://...'
+ */
 function extractTargetUrl(req) {
   const fromHeader = req.headers['x-target-url'];
   if (fromHeader) return fromHeader;
@@ -307,6 +381,9 @@ function extractTargetUrl(req) {
   return null;
 }
 
+/**
+ * Inicializa o servidor proxy intermediador.
+ */
 async function startServer() {
   if (!isAdmin()) {
     const adminMsg = IS_WINDOWS
@@ -321,7 +398,7 @@ async function startServer() {
 
   const ipManager = new IPv6SessionManager(interfaceId, networkBase, MAX_REQS_PER_IP);
 
-  // Limpeza automática ao encerrar (Ctrl+C / SIGINT / SIGTERM)
+  // Limpeza automática ao encerrar o servidor (Ctrl + C ou término de processo)
   const gracefulShutdown = async () => {
     console.log('\nFinalizando servidor proxy...');
     await ipManager.cleanupAll();
@@ -339,6 +416,7 @@ async function startServer() {
   console.log('====================================================');
 
   const server = http.createServer(async (req, res) => {
+    // Permite chamadas de qualquer origem (CORS totalmente liberado)
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', '*');
@@ -351,12 +429,18 @@ async function startServer() {
     const targetUrlStr = extractTargetUrl(req);
 
     if (!targetUrlStr) {
-      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
       return res.end(JSON.stringify({
         status: false,
-        message: 'Defina a rota de destino!',
-        exemplo_header: { 'X-Target-URL': 'https://zone.api.br/api/copilot?text=oi&apikey=freekey' },
-        exemplo_query: `http://localhost:${PORT}/?url=https://zone.api.br/api/copilot?text=oi&apikey=freekey`
+        mensagem: 'Defina a rota de destino desejada!',
+        exemplos: {
+          via_header: {
+            header: 'X-Target-URL',
+            valor: 'https://zone.api.br/api/V2/instagram?apikey=SUA_KEY&url=https://www.instagram.com/reels/Df-DeM8P4aI/'
+          },
+          via_query_param: `http://localhost:${PORT}/?url=https://zone.api.br/api/V2/instagram?apikey=SUA_KEY%26url=https://www.instagram.com/reels/Df-DeM8P4aI/`,
+          via_caminho_direto: `http://localhost:${PORT}/https://zone.api.br/api/v2/chatgpt?text=oi&apikey=SUA_KEY`
+        }
       }, null, 2));
     }
 
@@ -364,11 +448,11 @@ async function startServer() {
     try {
       targetUrl = new URL(targetUrlStr);
     } catch {
-      res.writeHead(400, { 'Content-Type': 'application/json' });
-      return res.end(JSON.stringify({ status: false, error: 'URL de destino inválida.' }));
+      res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+      return res.end(JSON.stringify({ status: false, error: 'URL de destino informada é inválida.' }));
     }
 
-    // Coleta o corpo se houver (POST / PUT / PATCH)
+    // Coleta o corpo da requisição caso seja POST / PUT / PATCH
     const chunks = [];
     for await (const chunk of req) {
       chunks.push(chunk);
@@ -379,12 +463,14 @@ async function startServer() {
     let lease = null;
 
     try {
+      // Reserva o IPv6 da sessão ativa (ou rotaciona se completou 15 usos)
       lease = await ipManager.acquireLease();
 
       console.log(`[${reqId}] Req #${lease.uses}/${MAX_REQS_PER_IP} no IP ${lease.ip} -> [${req.method}] ${targetUrl.href}`);
 
       const clientModule = targetUrl.protocol === 'https:' ? https : http;
 
+      // Repassa os headers originais adaptando o host para o destino
       const forwardedHeaders = { ...req.headers };
       delete forwardedHeaders['host'];
       delete forwardedHeaders['x-target-url'];
@@ -393,24 +479,24 @@ async function startServer() {
       const proxyReq = clientModule.request(targetUrl, {
         method: req.method,
         headers: forwardedHeaders,
-        localAddress: lease.ip, // Bind na interface com o IPv6 temporário
+        localAddress: lease.ip, // Bind na interface de saída com o IPv6 temporário!
         timeout: 30000,
       }, (proxyRes) => {
-        console.log(`[${reqId}] Resposta recebida: HTTP ${proxyRes.statusCode}`);
+        console.log(`[${reqId}] Resposta recebida da API: HTTP ${proxyRes.statusCode}`);
         res.writeHead(proxyRes.statusCode, proxyRes.headers);
         proxyRes.pipe(res);
       });
 
       proxyReq.on('timeout', () => {
-        console.error(`[${reqId}] Timeout no destino.`);
-        proxyReq.destroy(new Error('Destino não respondeu em 30 segundos'));
+        console.error(`[${reqId}] Timeout aguardando o destino.`);
+        proxyReq.destroy(new Error('A rota de destino não respondeu dentro de 30 segundos'));
       });
 
       proxyReq.on('error', (err) => {
         console.error(`[${reqId}] Erro ao contatar rota:`, err.message);
         if (!res.headersSent) {
-          res.writeHead(502, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ status: false, error: 'Erro no destino', details: err.message }));
+          res.writeHead(502, { 'Content-Type': 'application/json; charset=utf-8' });
+          res.end(JSON.stringify({ status: false, error: 'Erro no destino', detalhes: err.message }));
         }
       });
 
@@ -422,7 +508,7 @@ async function startServer() {
     } catch (err) {
       console.error(`[${reqId}] Erro no intermediador:`, err.message);
       if (!res.headersSent) {
-        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.writeHead(500, { 'Content-Type': 'application/json; charset=utf-8' });
         res.end(JSON.stringify({ status: false, error: err.message }));
       }
     } finally {
