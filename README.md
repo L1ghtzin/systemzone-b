@@ -1,19 +1,38 @@
-# IPv6 Rotating Proxy 🌐
+# IPv6 Rotating Proxy & Web Dashboard 🌐
 
-Proxy HTTP intermediador multiplataforma (**Windows e Linux**) que realiza rotação dinâmica de endereços IPv6 a partir de um bloco `/64`.
+Proxy HTTP intermediador multiplataforma (**Windows e Linux**) que realiza rotação dinâmica de endereços IPv6 a partir de um bloco `/64`, acompanhado de um **Painel Web Dashboard** moderno e integrado para consumir qualquer rota da **SystemZone API** diretamente pelo navegador.
 
 Cada IPv6 temporário é gerado matematicamente com 128-bits (`BigInt`), configurado na interface de rede, utilizado para processar até **15 requisições** em altíssima velocidade e desalocado automaticamente sem deixar resíduos.
 
 ---
 
-## 🚀 Funcionalidades
+## 🖥️ Painel Web Integrado (Dashboard)
+
+Ao iniciar o servidor, basta abrir no seu navegador:
+
+👉 **`http://localhost:3000/`** (ou `http://SEU_IP:3000/` pela rede/celular)
+
+### Recursos do Painel:
+* **Estatísticas ao Vivo:** Exibe em tempo real o IPv6 ativo no momento, a contagem de requisições do lote (`X / 15`), o prefixo `/64` detectado e o status da conexão.
+* **Chave Global:** Campo único para definir sua `apikey` (padrão `freekey`), aplicada instantaneamente em todas as rotas.
+* **Abas Prontas para Uso:**
+  * 📸 **Instagram Downloader (`/api/V2/instagram`):** Baixa Posts, Reels e Carrosséis, com player de vídeo embutido no navegador e botão de download em alta definição!
+  * 💬 **ChatGPT (`/api/v2/chatgpt`):** Chat interativo com a IA.
+  * 🤖 **Copilot (`/api/copilot`):** Consultas ao Microsoft Copilot.
+  * 🎵 **TikTok (`/api/v2/tiktok`):** Baixador de vídeos do TikTok.
+  * ⚡ **Rota Livre (Custom):** Playground completo para disparar qualquer rota (GET, POST, PUT, DELETE) com headers e body personalizados.
+* **Visualizador de Respostas:** Formatação JSON com destaque, tempo de resposta em milissegundos e botão de cópia com 1 clique.
+
+---
+
+## 🚀 Funcionalidades do Backend
 
 - **Multiplataforma Nativo:** Funciona de forma transparente tanto em **Windows** (usando `netsh` e PowerShell) quanto em **Linux** (usando `iproute2` / `ip -6 addr`).
-- **Zero Dependências Externas:** Escrito puramente com os módulos nativos do Node.js (`http`, `https`, `crypto`, `child_process`).
+- **Zero Dependências Externas:** Escrito puramente com os módulos nativos do Node.js (`http`, `https`, `crypto`, `fs`, `child_process`).
 - **Rotação por Lote (15 requisições por IP):** O primeiro request cria o IPv6 na interface e os 14 seguintes reutilizam o mesmo IP instantaneamente, eliminando latências de alocação. Na 16ª requisição, o IP é rotacionado de forma limpa.
 - **Concorrência e Thread-Safety:** Possui fila interna de sincronização de rede (`withNetLock`) para evitar colisões no sistema operacional caso múltiplos requests cheguem simultaneamente.
 - **Roteamento Flexível:** Aceita o destino via **Header HTTP**, **Query Parameter** ou **Caminho direto**.
-- **CORS Liberado:** Aceita chamadas diretas de navegadores, Postman, cURL, scripts Python, etc.
+- **CORS Totalmente Liberado:** Aceita chamadas diretas de navegadores, Postman, cURL, scripts Python, etc.
 - **Limpeza Automática:** Se o processo for encerrado (`Ctrl + C`), todos os IPv6 temporários são desassociados da placa de rede.
 
 ---
@@ -21,7 +40,7 @@ Cada IPv6 temporário é gerado matematicamente com 128-bits (`BigInt`), configu
 ## 📋 Pré-requisitos
 
 1. **Node.js** v18+ instalado.
-2. Uma conexão de internet com suporte a **IPv6 com bloco `/64` atribuído** (comum na maioria dos provedores residenciais de fibra e VPS).
+2. Conexão de internet com suporte a **IPv6 com bloco `/64` atribuído** (ou túnel Hurricane Electric TunnelBroker).
 3. **Privilégios de Administrador / Root:**
    - **Windows:** Executar o terminal como **Administrador** (necessário para o `netsh`).
    - **Linux:** Executar com `sudo` (necessário para manipular rotas com `ip`).
@@ -51,46 +70,31 @@ Rede IPv6 Base       : 2804:xxxx:xxxx:xxxx:0:0:0:0/64
 Limite por IPv6      : 15 requisições
 ====================================================
 Servidor Proxy Intermediador ativo em: http://localhost:3000
+Painel Web Dashboard disponível em  : http://localhost:3000/
 Pronto para intermediar até 15 requisições por IPv6!
 ```
 
 ---
 
-## 📡 Exemplos Práticos de Uso com a SystemZone API
+## 📡 Chamadas via API / Linha de Comando
 
-Você pode chamar o proxy de qualquer aplicação informando a rota da SystemZone API que deseja consultar.
+Além do Painel Web, você pode chamar o proxy programaticamente de qualquer aplicação:
 
-### 1. Instagram Downloader (Baixar Vídeos, Fotos e Reels)
-
-#### Via Header `X-Target-URL` (Recomendado):
+### 1. Instagram Downloader
 ```bash
-curl -H "X-Target-URL: https://zone.api.br/api/V2/instagram?apikey=SUA_KEY&url=https://www.instagram.com/reels/Df-DeM8P4aI/" http://localhost:3000
+curl -H "X-Target-URL: https://zone.api.br/api/V2/instagram?apikey=freekey&url=https://www.instagram.com/reels/Df-DeM8P4aI/" http://localhost:3000
 ```
 
-#### Via Query Parameter (`?url=...`):
+### 2. ChatGPT
 ```bash
-curl "http://localhost:3000/?url=https://zone.api.br/api/V2/instagram?apikey=SUA_KEY%26url=https://www.instagram.com/reels/Df-DeM8P4aI/"
+curl -H "X-Target-URL: https://zone.api.br/api/v2/chatgpt?text=Qual+a+capital+da+França?&apikey=freekey" http://localhost:3000
 ```
 
-#### Exemplo em JavaScript (Node.js / Fetch):
-```javascript
-const destino = 'https://zone.api.br/api/V2/instagram?apikey=SUA_KEY&url=https://www.instagram.com/reels/Df-DeM8P4aI/';
-
-const response = await fetch('http://localhost:3000', {
-  headers: {
-    'X-Target-URL': destino
-  }
-});
-
-const data = await response.json();
-console.log('Vídeo para download:', data.media[0]);
-```
-
-#### Exemplo em Python (`requests`):
+### 3. Exemplo em Python (`requests`):
 ```python
 import requests
 
-url_destino = 'https://zone.api.br/api/V2/instagram?apikey=SUA_KEY&url=https://www.instagram.com/reels/Df-DeM8P4aI/'
+url_destino = 'https://zone.api.br/api/V2/instagram?apikey=freekey&url=https://www.instagram.com/reels/Df-DeM8P4aI/'
 
 resposta = requests.get(
     'http://localhost:3000',
@@ -98,23 +102,7 @@ resposta = requests.get(
 )
 
 dados = resposta.json()
-print("Link da mídia:", dados['media'][0])
-```
-
----
-
-### 2. ChatGPT (Consultas de IA)
-
-```bash
-curl -H "X-Target-URL: https://zone.api.br/api/v2/chatgpt?text=Qual+a+capital+da+França?&apikey=SUA_KEY" http://localhost:3000
-```
-
----
-
-### 3. Microsoft Copilot
-
-```bash
-curl -H "X-Target-URL: https://zone.api.br/api/copilot?text=Explique+IPv6&apikey=SUA_KEY" http://localhost:3000
+print("Link do vídeo:", dados['media'][0])
 ```
 
 ---

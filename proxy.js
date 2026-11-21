@@ -5,6 +5,7 @@
  * 
  * Funcionalidade:
  *  - Intermedeia requisições HTTP/HTTPS para qualquer API de destino.
+ *  - Fornece um Painel Web Dashboard completo na raiz (/) para testar todas as rotas.
  *  - Aloca dinamicamente novos endereços IPv6 aleatórios a partir de um bloco /64.
  *  - Suporta até 15 requisições por endereço IPv6 antes de efetuar a rotação.
  *  - Totalmente compatível com Windows (PowerShell/netsh) e Linux (iproute2/ip).
@@ -16,7 +17,9 @@
 const http = require('http');
 const https = require('https');
 const crypto = require('crypto');
+const fs = require('fs');
 const os = require('os');
+const path = require('path');
 const { execSync, execFileSync } = require('child_process');
 const { URL } = require('url');
 
@@ -272,6 +275,17 @@ class IPv6SessionManager {
     this.mutex = Promise.resolve();
   }
 
+  getStats() {
+    return {
+      interfaceId: this.interfaceId,
+      networkBase: `${bigIntToIPv6(this.networkBase)}/64`,
+      currentIp: this.currentLease ? this.currentLease.ip : 'Aguardando 1º request',
+      uses: this.currentLease ? this.currentLease.uses : 0,
+      maxUses: this.maxUses,
+      platform: `${os.type()} (${process.platform})`
+    };
+  }
+
   /**
    * Obtém um IPv6 válido para a requisição atual.
    * Se o IP atual atingiu o limite de usos, cria um novo automaticamente.
@@ -426,13 +440,32 @@ async function startServer() {
       return res.end();
     }
 
+    // 1. Endpoint para Estatísticas em tempo real (consumido pelo Dashboard)
+    if (req.method === 'GET' && req.url === '/api/proxy-stats') {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify(ipManager.getStats()));
+    }
+
+    // 2. Servir o Painel Web Dashboard ao acessar a raiz no navegador
+    const isDashboardRoute = req.method === 'GET' && (req.url === '/' || req.url === '/dashboard');
+    const hasProxyParam = req.headers['x-target-url'] || req.url.includes('?url=');
+
+    if (isDashboardRoute && !hasProxyParam) {
+      const dashboardPath = path.join(__dirname, 'dashboard.html');
+      if (fs.existsSync(dashboardPath)) {
+        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+        return res.end(fs.readFileSync(dashboardPath, 'utf-8'));
+      }
+    }
+
+    // 3. Extrair a URL alvo para intermediação
     const targetUrlStr = extractTargetUrl(req);
 
     if (!targetUrlStr) {
       res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
       return res.end(JSON.stringify({
         status: false,
-        mensagem: 'Defina a rota de destino desejada!',
+        mensagem: 'Defina a rota de destino desejada ou abra http://localhost:' + PORT + ' no navegador para acessar o Painel Web!',
         exemplos: {
           via_header: {
             header: 'X-Target-URL',
@@ -520,6 +553,7 @@ async function startServer() {
 
   server.listen(PORT, HOST, () => {
     console.log(`Servidor Proxy Intermediador ativo em: http://localhost:${PORT}`);
+    console.log(`Painel Web Dashboard disponível em  : http://localhost:${PORT}/`);
     console.log(`Pronto para intermediar até ${MAX_REQS_PER_IP} requisições por IPv6!\n`);
   });
 }
