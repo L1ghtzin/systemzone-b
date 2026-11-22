@@ -202,8 +202,16 @@ function adicionarIPv6(interfaceId, ip) {
         'store=active', 'skipassource=true'
       ], { stdio: 'pipe' });
     } else {
-      // No Linux, 'nodad' pula a verificação DAD e disponibiliza o IP de imediato
-      execFileSync('ip', ['-6', 'addr', 'add', `${ip}/64`, 'dev', String(interfaceId), 'nodad'], { stdio: 'pipe' });
+      // No Linux:
+      // 1. Usa /128 com nodad e noprefixroute para evitar poluir rotas ou deletar rotas de subnet
+      // 2. Define valid_lft e preferred_lft como forever para que o kernel/NetworkManager não expire o IP
+      execFileSync('ip', [
+        '-6', 'addr', 'add', `${ip}/128`,
+        'dev', String(interfaceId),
+        'nodad', 'noprefixroute',
+        'preferred_lft', 'forever',
+        'valid_lft', 'forever'
+      ], { stdio: 'pipe' });
     }
   });
 }
@@ -221,12 +229,39 @@ function removerIPv6(interfaceId, ip) {
           'store=active'
         ], { stdio: 'pipe' });
       } else {
-        execFileSync('ip', ['-6', 'addr', 'del', `${ip}/64`, 'dev', String(interfaceId)], { stdio: 'pipe' });
+        try {
+          execFileSync('ip', ['-6', 'addr', 'del', `${ip}/128`, 'dev', String(interfaceId)], { stdio: 'pipe' });
+        } catch {
+          execFileSync('ip', ['-6', 'addr', 'del', `${ip}/64`, 'dev', String(interfaceId)], { stdio: 'pipe' });
+        }
       }
     } catch (e) {
       // Ignora silenciosamente caso o IP já tenha sido desalocado
     }
   });
+}
+
+/**
+ * Valida se um determinado IPv6 está atualmente ativo e utilizável na interface.
+ */
+function isIpPresent(interfaceId, ip) {
+  if (IS_WINDOWS) {
+    try {
+      const out = powershell(
+        `Get-NetIPAddress -AddressFamily IPv6 -IPAddress '${ip}' -ErrorAction SilentlyContinue | Select-Object -ExpandProperty AddressState`
+      );
+      return out.trim() === 'Preferred';
+    } catch {
+      return false;
+    }
+  } else {
+    try {
+      const out = execFileSync('ip', ['-6', 'addr', 'show', 'dev', String(interfaceId), 'to', ip], { encoding: 'utf-8' });
+      return Boolean(out && out.includes(ip) && !out.includes('tentative') && !out.includes('dadfailed'));
+    } catch {
+      return false;
+    }
+  }
 }
 
 /**
@@ -249,12 +284,9 @@ async function aguardarIPv6(interfaceId, ip) {
   } else {
     // No Linux com nodad a ativação é imediata; apenas valida a ausência de 'tentative'
     for (let i = 0; i < 20; i++) {
-      try {
-        const out = execFileSync('ip', ['-6', 'addr', 'show', 'dev', String(interfaceId), 'to', ip], { encoding: 'utf-8' });
-        if (out && !out.includes('tentative')) {
-          return;
-        }
-      } catch {}
+      if (isIpPresent(interfaceId, ip)) {
+        return;
+      }
       await sleep(100);
     }
   }
@@ -302,6 +334,23 @@ class IPv6SessionManager {
     await prevMutex;
 
     try {
+      // Se já temos um lease ativo, valida se o IP ainda está configurado e funcional na placa
+      if (this.currentLease && this.currentLease.uses < this.maxUses) {
+        if (!isIpPresent(this.interfaceId, this.currentLease.ip)) {
+          console.warn(`\n[ALERTA] IPv6 ${this.currentLease.ip} desapareceu da placa de rede! Tentando recuperar...`);
+          try {
+            await adicionarIPv6(this.interfaceId, this.currentLease.ip);
+            await aguardarIPv6(this.interfaceId, this.currentLease.ip);
+            console.log(`[RECUPERADO] IPv6 ${this.currentLease.ip} restaurado na interface com sucesso!\n`);
+          } catch {
+            console.warn(`[ROTAÇÃO FORÇADA] Falha ao restaurar o IPv6 anterior. Alocando novo endereço imediatamente...`);
+            this.currentLease.retired = true;
+            this.checkRetireLease(this.currentLease);
+            this.currentLease = null;
+          }
+        }
+      }
+
       if (!this.currentLease || this.currentLease.uses >= this.maxUses) {
         if (this.currentLease) {
           console.log(`\n[ROTAÇÃO] IPv6 ${this.currentLease.ip} atingiu o limite de ${this.maxUses} requisições.`);
@@ -328,6 +377,31 @@ class IPv6SessionManager {
       this.currentLease.inFlight++;
 
       return this.currentLease;
+    } finally {
+      release();
+    }
+  }
+
+  /**
+   * Força a aposentadoria e rotação imediata de um IP (por exemplo, se recebeu EADDRNOTAVAIL).
+   */
+  async forceRotate(failedIp) {
+    let release;
+    const lock = new Promise((res) => { release = res; });
+    const prevMutex = this.mutex;
+    this.mutex = (async () => {
+      await prevMutex;
+      await lock;
+    })();
+
+    await prevMutex;
+    try {
+      if (this.currentLease && (!failedIp || this.currentLease.ip === failedIp)) {
+        console.log(`\n[ROTAÇÃO DE EMERGÊNCIA] IPv6 ${this.currentLease.ip} reportou falha/indisponibilidade. Descartando...`);
+        this.currentLease.retired = true;
+        this.checkRetireLease(this.currentLease);
+        this.currentLease = null;
+      }
     } finally {
       release();
     }
@@ -407,6 +481,16 @@ async function startServer() {
   }
 
   console.log(`Sistema operacional: ${os.type()} (${process.platform})`);
+
+  if (IS_LINUX) {
+    try {
+      execSync('sysctl -w net.ipv6.ip_nonlocal_bind=1', { stdio: 'ignore' });
+      console.log('Kernel Linux: net.ipv6.ip_nonlocal_bind=1 habilitado com sucesso.');
+    } catch (e) {
+      console.warn('Kernel Linux: Não foi possível definir ip_nonlocal_bind (execute sudo sysctl -w net.ipv6.ip_nonlocal_bind=1 manualmente).');
+    }
+  }
+
   console.log('Detectando interface de rede e prefixo IPv6...');
   const { interfaceId, networkBase } = detectarRede();
 
@@ -525,11 +609,23 @@ async function startServer() {
         proxyReq.destroy(new Error('A rota de destino não respondeu dentro de 30 segundos'));
       });
 
-      proxyReq.on('error', (err) => {
+      proxyReq.on('error', async (err) => {
         console.error(`[${reqId}] Erro ao contatar rota:`, err.message);
+
+        // Se ocorrer bind EADDRNOTAVAIL, força rotação para que a próxima requisição não fique presa no IP inválido
+        if (err.message && err.message.includes('EADDRNOTAVAIL')) {
+          console.warn(`[${reqId}] Detectado bind EADDRNOTAVAIL! Forçando renovação imediata do IPv6...`);
+          await ipManager.forceRotate(lease ? lease.ip : null);
+        }
+
         if (!res.headersSent) {
           res.writeHead(502, { 'Content-Type': 'application/json; charset=utf-8' });
-          res.end(JSON.stringify({ status: false, error: 'Erro no destino', detalhes: err.message }));
+          res.end(JSON.stringify({
+            status: false,
+            error: 'Erro no destino',
+            detalhes: err.message,
+            dica: err.message.includes('EADDRNOTAVAIL') ? 'O IPv6 foi renovado automaticamente. Tente a requisição novamente!' : undefined
+          }));
         }
       });
 
